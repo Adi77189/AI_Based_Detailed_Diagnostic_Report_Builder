@@ -1,0 +1,13 @@
+pymupdf
+pytesseract
+opencv-python
+pillow
+spacy
+reportlab
+python-dotenv
+langchain
+langchain-community
+google-generativeai
+tqdm
+numpy
+pandas

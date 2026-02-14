@@ -1,0 +1,14 @@
+ddr_intellect_env/
+**pycache**/
+*.pyc
+.env
+outputs/reports/*.pdf
+# ignore all datasets
+
+data/inspection_reports/*
+data/thermal_reports/*
+
+# allow only demo files
+
+!data/inspection_reports/inspection_demo.pdf
+!data/thermal_reports/thermal_demo.pdf
