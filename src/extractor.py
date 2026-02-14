@@ -105,7 +105,7 @@ def extract_observations(text):
 if __name__ == "__main__":
     from reader import read_pdf
 
-    file_path = "C:\\Users\\Asus\\Downloads\\ai_ddr_builder\\data\\inspection_reports\\Inspection_1.pdf"
+    file_path = "C:\\Users\\Asus\\Downloads\\ai_ddr_builder\\data\\inspection_reports\\Inspection_2.pdf"
     text = read_pdf(file_path)
 
     issues = extract_observations(text)
