@@ -1,79 +1,159 @@
-# Craete Final PDF report
+# ---------------- CREATE FINAL PDF REPORT ---------------- #
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 import os
 
-OUTPUT_PATH = "outputs/reports/DDR_Report1.pdf"
+OUTPUT_PATH = "outputs/reports/DDR_Report.pdf"
 
 
-def create_pdf(summary, area_obs, root_causes, severity, severity_reason, actions, notes, missing):
-
-    os.makedirs("output/reports", exist_ok=True)
+def create_pdf(
+    summary,
+    area_obs,
+    root_causes,
+    severity,
+    severity_reason,
+    actions,
+    notes,
+    missing
+):
+    # Ensure output directory exists
+    os.makedirs("outputs/reports", exist_ok=True)
 
     c = canvas.Canvas(OUTPUT_PATH, pagesize=A4)
     width, height = A4
 
     y = height - 50
 
+    # ---------- HELPERS ---------- #
+    def new_page():
+        nonlocal y
+        c.showPage()
+        y = height - 50
+
     def write_line(text, bold=False, gap=14):
         nonlocal y
+
         if y < 60:
-            c.showPage()
-            y = height - 50
+            new_page()
 
-        if bold:
-            c.setFont("Helvetica-Bold", 11)
-        else:
-            c.setFont("Helvetica", 10)
+        c.setFont("Helvetica-Bold" if bold else "Helvetica", 10)
 
-        c.drawString(50, y, text)
-        y -= gap
+        # basic wrapping for long lines
+        max_chars = 90
+        lines = [text[i:i+max_chars] for i in range(0, len(text), max_chars)]
 
-    # Title
+        for line in lines:
+            if y < 60:
+                new_page()
+            c.drawString(50, y, line)
+            y -= gap
+
+    def draw_image(img_path, img_width=200, img_height=140):
+        nonlocal y
+
+        if not os.path.exists(img_path):
+            write_line("   Image Not Available")
+            return
+
+        try:
+            img = ImageReader(img_path)
+
+            # pagination check
+            if y - img_height < 60:
+                new_page()
+
+            c.drawImage(
+                img,
+                60,
+                y - img_height,
+                width=img_width,
+                height=img_height
+            )
+
+            y -= (img_height + 10)
+
+        except Exception:
+            write_line("   Image Not Available")
+
+    # ---------- TITLE ---------- #
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(150, y, "Detailed Diagnostic Report (DDR)")
+    c.drawString(120, y, "Detailed Diagnostic Report (DDR)")
     y -= 30
 
-    # Section 1
+    # ---------- SECTION 1 ---------- #
     write_line("1. Property Issue Summary", True)
     write_line(summary)
     y -= 10
 
-    # Section 2
+    # ---------- SECTION 2 (UPDATED) ---------- #
     write_line("2. Area-wise Observations", True)
-    for o in area_obs:
-        write_line("- " + o)
+
+    if not area_obs:
+        write_line("Not Available")
+    else:
+        for obs in area_obs:
+            text = obs.get("text", "Not Available")
+            images = obs.get("images", [])
+
+            write_line("- " + text)
+
+            if images and images != ["Image Not Available"]:
+                for img_path in images:
+                    draw_image(img_path)
+            else:
+                write_line("   Image Not Available")
+
+            y -= 5
+
     y -= 10
 
-    # Section 3
+    # ---------- SECTION 3 ---------- #
     write_line("3. Probable Root Cause", True)
-    for r in root_causes:
-        write_line(f"- {r[0]}: {r[1]}")
+
+    if root_causes and root_causes != ["Not Available"]:
+        for r in root_causes:
+            if isinstance(r, tuple):
+                write_line(f"- {r[0]}: {r[1]}")
+            else:
+                write_line("- " + str(r))
+    else:
+        write_line("Not Available")
+
     y -= 10
 
-    # Section 4
+    # ---------- SECTION 4 ---------- #
     write_line("4. Severity Assessment", True)
-    write_line("Severity Level: " + severity)
-    write_line("Reason: " + severity_reason)
+    write_line("Severity Level: " + str(severity))
+    write_line("Reason: " + str(severity_reason))
     y -= 10
 
-    # Section 5
+    # ---------- SECTION 5 ---------- #
     write_line("5. Recommended Actions", True)
-    for a in actions:
-        write_line("- " + a)
+
+    if actions:
+        for a in actions:
+            write_line("- " + a)
+    else:
+        write_line("Not Available")
+
     y -= 10
 
-    # Section 6
+    # ---------- SECTION 6 ---------- #
     write_line("6. Additional Notes", True)
+
     for n in notes:
         write_line("- " + n)
+
     y -= 10
 
-    # Section 7
+    # ---------- SECTION 7 ---------- #
     write_line("7. Missing or Unclear Information", True)
+
     for m in missing:
         write_line("- " + m)
 
+    # ---------- SAVE ---------- #
     c.save()
-    print(f"\nPDF Report Generated → {OUTPUT_PATH}")
+
+    print(f"\n PDF Report Generated → {OUTPUT_PATH}")

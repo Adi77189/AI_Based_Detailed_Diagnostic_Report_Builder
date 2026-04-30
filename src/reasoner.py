@@ -3,8 +3,13 @@ def analyze_root_cause(inspection_obs, thermal_obs):
 
     conclusions = []
 
-    inspection_text = " ".join(inspection_obs).lower()
-    thermal_text = " ".join(thermal_obs).lower()
+    inspection_text = " ".join(
+    [obs["observation"] for obs in inspection_obs]
+    ).lower()
+    
+    thermal_text = " ".join(
+    [t["finding"] for t in thermal_obs]
+).lower()
 
     # ---- Moisture / Seepage ----
     if ("leak" in inspection_text or "damp" in inspection_text) and \

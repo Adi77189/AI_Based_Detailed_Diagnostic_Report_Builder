@@ -1,27 +1,22 @@
-from src.reader import read_pdf
-from src.cleaner import clean_text , normalize_ocr_text
+# ---------------- IMPORTS ---------------- #
+from src.cleaner import clean_text, normalize_ocr_text
 import spacy
-from src.ocr_reader import ocr_read_pdf
+from src.ocr_reader import ocr_read_pdf_with_images
+from src.reader import read_pdf_with_images
 
-nlp = spacy.load("en_core_web_sm")
 
+# ---------------- KEYWORDS ---------------- #
 THERMAL_KEYWORDS = [
-    # electrical thermography
     "hot spot", "overheating", "elevated temperature",
     "thermal anomaly", "abnormal heat", "temperature rise",
-
-    # building thermography
     "insulation", "heat loss", "energy loss",
     "air leakage", "cold bridging", "thermal bridging",
     "cold patch", "cold spot", "moisture path",
     "incontinuity", "air infiltration"
 ]
 
-THERMAL_VERBS = [
-    "detected", "observed", "identified", "recorded", "measured"
-]
 
-
+# ---------------- CLASSIFIER ---------------- #
 def classify_thermal_fault(line):
     l = line.lower()
 
@@ -43,62 +38,117 @@ def classify_thermal_fault(line):
     if "glazing" in l:
         return "Window/Glazing Thermal Inefficiency"
 
+    if "hot spot" in l or "overheating" in l or "temperature rise" in l:
+        return "Electrical Hotspot Detected"
+
     return None
 
 
-import re
+# ---------------- MAIN FUNCTION ---------------- #
+def extract_thermal_findings(pages_data):
+    """
+    Input:
+    [
+        {
+            "page_num": int,
+            "text": str,
+            "image_paths": list
+        }
+    ]
 
-def extract_thermal_findings(text):
+    Output:
+    [
+        {
+            "page": int,
+            "finding": str,
+            "evidence": str,
+            "images": list,
+            "confidence": float
+        }
+    ]
+    """
 
-    # clean + normalize OCR
-    text = clean_text(text)
-    text = normalize_ocr_text(text)
+    findings = []
 
-    findings = set()   # set prevents duplicates automatically
+    for page in pages_data:
+        page_num = page.get("page_num", "Not Available")
 
-    lines = text.split("\n")
+        text = clean_text(page.get("text", ""))
+        text = normalize_ocr_text(text)
 
-    for line in lines:
-        s = line.strip()
+        images = page.get("image_paths", ["Image Not Available"])
 
-        if len(s) < 15:
-            continue
+        lines = text.split("\n")
 
-        # ignore metadata
-        ignore_patterns = [
-            "photo date", "file dc_", "ambient temp",
-            "camera", "software", "survey accordance",
-            "client", "inspection data", "weather",
-            "wind speed", "certification", "report date",
-            "location", "component", "item id", "status",
-            "work order", "bs en", "company", "°c"
-        ]
+        for line in lines:
+            s = line.strip()
 
-        if any(p in s.lower() for p in ignore_patterns):
-            continue
+            if len(s) < 15:
+                continue
 
-        # classify the fault instead of storing paragraph
-        fault = classify_thermal_fault(s)
+            # ---- IGNORE METADATA ---- #
+            ignore_patterns = [
+                "photo date", "file dc_", "ambient temp",
+                "camera", "software", "survey accordance",
+                "client", "inspection data", "weather",
+                "wind speed", "certification", "report date",
+                "location", "component", "item id", "status",
+                "work order", "bs en", "company", "°c"
+            ]
 
-        if fault:
-            findings.add(fault)
+            if any(p in s.lower() for p in ignore_patterns):
+                continue
 
-    return list(findings)
+            # ---- CLASSIFY ---- #
+            fault = classify_thermal_fault(s)
 
+            if fault:
+                findings.append({
+                    "page": page_num,
+                    "finding": fault,
+                    "evidence": s,
+                    "images": images if images else ["Image Not Available"],
+                    "confidence": round(min(1.0, 0.7 + len(s) / 200), 2)
+                })
+
+    # ---- DEDUPLICATION ---- #
+    unique = {}
+    for f in findings:
+        key = f["finding"]
+        if key not in unique:
+            unique[key] = f
+
+    return list(unique.values())
+
+
+# ---------------- TEST ---------------- #
 if __name__ == "__main__":
 
-    path = "C:\\Users\\Asus\\Downloads\\ai_ddr_builder\\data\\thermal_reports\\Thermal_1.pdf"
+    from src.reader import read_pdf_with_images
+    from src.ocr_reader import ocr_read_pdf_with_images
 
-    text = read_pdf(path)
+    path = r"C:\Users\Asus\Downloads\ai_ddr_builder\data\thermal_reports\thermal_demo.pdf"
 
-# if pdf had no text -> use OCR
-    if len(text.strip()) < 200:
-        print("No readable text found, switching to OCR...")
-        text = ocr_read_pdf(path)
+    # ---- Try normal PDF ---- #
+    pages = read_pdf_with_images(path)
 
-    thermal_issues = extract_thermal_findings(text)
+    # ---- Fallback to OCR ---- #
+    total_text = " ".join([p["text"] for p in pages])
+
+    if len(total_text.strip()) < 200:
+        print("No readable text → Switching to OCR...")
+        pages = ocr_read_pdf_with_images(path)
+
+    thermal_issues = extract_thermal_findings(pages)
 
     print("\n======= THERMAL FINDINGS =======\n")
 
+    if not thermal_issues:
+        print("Not Available")
+
     for i, t in enumerate(thermal_issues, 1):
-        print(f"{i}. {t}")
+        print(f"\n{i}. Page {t['page']}")
+        print("   Finding:", t["finding"])
+        print("   Evidence:", t["evidence"])
+        print("   Images:", t["images"])
+        print("   Confidence:", t["confidence"])
