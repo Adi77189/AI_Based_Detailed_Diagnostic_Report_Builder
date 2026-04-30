@@ -2,7 +2,6 @@
 
 import os
 
-# Updated imports
 from src.reader import read_pdf_with_images
 from src.ocr_reader import ocr_read_pdf_with_images
 from src.extractor import extract_observations

@@ -2,7 +2,10 @@ ddr_intellect_env/
 **pycache**/
 *.pyc
 .env
-outputs/reports/*.pdf
+#Results
+outputs/
+*.pdf
+*.png
 # ignore all datasets
 
 data/inspection_reports/*
