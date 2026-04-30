@@ -94,7 +94,7 @@ The DDR includes:
 * ReportLab
 
 ---
-
+"""
 ## Project Structure
 
 ai_ddr_builder/
@@ -119,7 +119,7 @@ ai_ddr_builder/
 ├── main.py
 ├── requirements.txt
 └── README.md
-
+"""
 ---
 
 ##  Input Data
