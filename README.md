@@ -84,7 +84,7 @@ The DDR includes:
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 * Python
 * spaCy (NLP)
@@ -94,8 +94,31 @@ The DDR includes:
 * ReportLab
 
 ---
+```
 ##  Project Structure
-
+ai_ddr_builder/
+│
+├── data/
+│ ├── inspection_reports/
+│ ├── thermal_reports/
+│
+├── outputs/
+│ ├── images/
+│ ├── reports/
+│
+├── src/
+│ ├── reader.py
+│ ├── ocr_reader.py
+│ ├── extractor.py
+│ ├── thermal_extractor.py
+│ ├── reasoner.py
+│ ├── ddr_generator.py
+│ ├── pdf_exporter.py
+│
+├── main.py
+├── requirements.txt
+└── README.md
+```
 ---
 
 ##  Input Data
