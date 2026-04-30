@@ -94,7 +94,7 @@ The DDR includes:
 * ReportLab
 
 ---
-##  Project Structure
+## Project Structure
 ```
 ai_ddr_builder/
 │
